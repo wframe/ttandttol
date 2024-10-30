@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sephiroth Flashcard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 40px;
+    }
+
+    #flashcard {
+      border: 1px solid #333;
+      padding: 20px;
+      width: 400px;
+      text-align: center;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 80vh;
+    }
+
+    #contentWrapper {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    #flashcard img {
+      width: 100%;
+      height: auto;
+      margin-top: 10px;
+      display: none;
+    }
+
+    #buttonContainer {
+      display: flex;
+      justify-content: center;
+    }
+
+    #clue, #answer {
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+
+    #answer {
+      font-weight: bold;
+      color: #333;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="flashcard">
+  <div id="contentWrapper">
+    <div id="clue">Loading...</div>
+    <div id="answer" class="hidden">Answer: </div>
+    <img id="cardImage" alt="Card Image">
+  </div>
+
+  <div id="buttonContainer">
+    <button id="actionButton" onclick="revealAnswer()">Reveal Answer</button>
+  </div>
+</div>
+
+<script>
+  let mysticalqData = [];
+  let thothData = [];
+  let currentAnswer = null;
+  let currentDataSet = "mysticalq"; // Start with mysticalq
+
+  const MYSTICALQ_TSV_URL = "https://gist.githubusercontent.com/wframe/e9222f6dfbfa0c0f56711be24aa0edca/raw/c32eea0ff64e6830f8fc3cb4659b83a6468e0e5e/mysticalqabalah_sephiroth.tsv";
+  const THOTH_TSV_URL = "https://gist.githubusercontent.com/wframe/d8a61e22bea8d3f0bb4866bbf316bdfb/raw/7078f891c6644e4035d65de557969dcc4b54aeed/minorthoth.tsv";
+
+  const tarotCardMappings = {
+    "Ace of Wands": "ace_wands",
+    "Ace of Cups": "ace_cups",
+    "Ace of Swords": "ace_swords",
+    "Ace of Disks": "ace_disks",
+    "Two of Wands": "2_wands",
+    "Two of Cups": "2_cups",
+    "Two of Swords": "2_swords",
+    "Two of Disks": "2_disks",
+    "Three of Wands": "3_wands",
+    "Three of Cups": "3_cups",
+    "Three of Swords": "3_swords",
+    "Three of Disks": "3_disks",
+    "Four of Wands": "4_wands",
+    "Four of Cups": "4_cups",
+    "Four of Swords": "4_swords",
+    "Four of Disks": "4_disks",
+    "Five of Wands": "5_wands",
+    "Five of Cups": "5_cups",
+    "Five of Swords": "5_swords",
+    "Five of Disks": "5_disks",
+    "Six of Wands": "6_wands",
+    "Six of Cups": "6_cups",
+    "Six of Swords": "6_swords",
+    "Six of Disks": "6_disks",
+    "Seven of Wands": "7_wands",
+    "Seven of Cups": "7_cups",
+    "Seven of Swords": "7_swords",
+    "Seven of Disks": "7_disks",
+    "Eight of Wands": "8_wands",
+    "Eight of Cups": "8_cups",
+    "Eight of Swords": "8_swords",
+    "Eight of Disks": "8_disks",
+    "Nine of Wands": "9_wands",
+    "Nine of Cups": "9_cups",
+    "Nine of Swords": "9_swords",
+    "Nine of Disks": "9_disks",
+    "Ten of Wands": "10_wands",
+    "Ten of Cups": "10_cups",
+    "Ten of Swords": "10_swords",
+    "Ten of Disks": "10_disks"
+  };
+
+// Enhanced TSV loading with separate parsing for each dataset
+function loadTSVFromURL(url, dataArray, datasetName) {
+  fetch(url)
+    .then(response => response.text())
+    .then(text => {
+      parseTSV(text, dataArray, datasetName);
+      console.log(`Data Loaded for ${datasetName}:`, dataArray);
+      loadRandomFlashcard();
+    })
+    .catch(error => console.error(`Error fetching ${datasetName} TSV:`, error));
+}
+
+function parseTSV(text, dataArray, datasetName) {
+  const rows = text.trim().split('\n');
+  const headers = rows[0].split('\t');
+  console.log(`Headers for ${datasetName}:`, headers);
+
+  for (let i = 1; i < rows.length; i++) {
+    const cells = rows[i].split('\t');
+    const rowObject = {};
+
+    headers.forEach((header, index) => {
+      rowObject[header] = cells[index] || ""; // Default to empty if undefined
+    });
+
+    // Adapt to different dataset formats
+    if (datasetName === "mysticalq" && rowObject["SEPHIRAH"]) {
+      dataArray.push(rowObject); // Push entire row for flexibility
+    } else if (datasetName === "thoth" && rowObject["Description"] && rowObject["Answer"]) {
+      dataArray.push(rowObject); // For thoth, ensure Description and Answer
+    }
+  }
+  console.log(`Parsed Data for ${datasetName}:`, dataArray);
+}
+
+loadTSVFromURL(MYSTICALQ_TSV_URL, mysticalqData, "mysticalq");
+loadTSVFromURL(THOTH_TSV_URL, thothData, "thoth");
+
+function loadRandomFlashcard() {
+  currentDataSet = Math.random() < 0.5 ? "mysticalq" : "thoth";
+  const dataSet = currentDataSet === "mysticalq" ? mysticalqData : thothData;
+
+  if (dataSet.length === 0) {
+    document.getElementById('clue').innerText = `Error loading ${currentDataSet} data.`;
+    return;
+  }
+
+  // Reset previous answer and hide it
+  document.getElementById('answer').classList.add('hidden');
+  document.getElementById('answer').innerText = '';
+  document.getElementById('cardImage').style.display = 'none';
+
+  document.getElementById('actionButton').innerText = 'Reveal Answer';
+  document.getElementById('actionButton').onclick = revealAnswer;
+
+  let clue, answer;
+
+  // Adjust logic based on dataset
+  if (currentDataSet === "mysticalq") {
+    const randomRow = dataSet[Math.floor(Math.random() * dataSet.length)];
+    const clueFields = ["MAGICAL IMAGE", "YETZIRATIC TEXT", "SPIRITUAL EXPERIENCE"];
+    const randomClueField = clueFields[Math.floor(Math.random() * clueFields.length)];
+
+    clue = randomRow[randomClueField] || "No description available";
+    answer = randomRow["SEPHIRAH"] || "Unknown Sephirah";
+  } else { // thoth dataset
+    const randomRow = dataSet[Math.floor(Math.random() * dataSet.length)];
+    clue = randomRow["Description"];
+    answer = randomRow["Answer"];
+  }
+
+  currentAnswer = answer;
+
+  console.log(`Selected DataSet: ${currentDataSet}`);
+  console.log("Clue:", clue);
+  console.log("Current Answer:", currentAnswer);
+
+  document.getElementById('clue').innerText = clue;
+}
+
+function revealAnswer() {
+    if (currentAnswer) {
+        document.getElementById('answer').classList.remove('hidden');
+        document.getElementById('answer').innerText = `Answer: ${currentAnswer}`;
+
+        if (currentDataSet === "thoth") {
+            // Check if currentAnswer corresponds to a Sephirah
+            if (mysticalqData.some(row => row["SEPHIRAH"] === currentAnswer)) {
+                // This is a Sephirah in the Thoth dataset, use the sephiroth image path
+                const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/sephiroth/${mysticalqData.findIndex(row => row["SEPHIRAH"] === currentAnswer) + 1}_${currentAnswer.toLowerCase()}.jpg`;
+                document.getElementById('cardImage').src = imagePath;
+                document.getElementById('cardImage').style.display = 'block';
+            } else if (tarotCardMappings[currentAnswer]) {
+                // This is a regular Tarot card in the Thoth dataset
+                const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/thoth_tarot/${tarotCardMappings[currentAnswer]}.jpg`;
+                document.getElementById('cardImage').src = imagePath;
+                document.getElementById('cardImage').style.display = 'block';
+            }
+        } else if (currentDataSet === "mysticalq") {
+            // Handle the Sephiroth path for mysticalq as before
+            const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/sephiroth/${mysticalqData.findIndex(row => row["SEPHIRAH"] === currentAnswer) + 1}_${currentAnswer.toLowerCase()}.jpg`;
+            document.getElementById('cardImage').src = imagePath;
+            document.getElementById('cardImage').style.display = 'block';
+        }
+
+        document.getElementById('actionButton').innerText = 'New Flashcard';
+        document.getElementById('actionButton').onclick = loadRandomFlashcard;
+    }
+}
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  Promise.all([
+    loadTSVFromURL(MYSTICALQ_TSV_URL, mysticalqData, "mysticalq"),
+    loadTSVFromURL(THOTH_TSV_URL, thothData, "thoth")
+  ]).then(() => loadRandomFlashcard());
+});
+
+</script>
+
+</body>
+</html>
