@@ -170,7 +170,7 @@ function loadRandomFlashcard() {
   const dataSet = currentDataSet === "mysticalq" ? mysticalqData : thothData;
 
   if (dataSet.length === 0) {
-    document.getElementById('clue').innerText = `Error loading ${currentDataSet} data.`;
+    document.getElementById('clue').innerText = "Error loading data.";
     return;
   }
 
@@ -184,28 +184,48 @@ function loadRandomFlashcard() {
 
   let clue, answer;
 
-  // Adjust logic based on dataset
   if (currentDataSet === "mysticalq") {
+    // Randomly select a row
     const randomRow = dataSet[Math.floor(Math.random() * dataSet.length)];
-    const clueFields = ["MAGICAL IMAGE", "YETZIRATIC TEXT", "SPIRITUAL EXPERIENCE"];
-    const randomClueField = clueFields[Math.floor(Math.random() * clueFields.length)];
+    answer = randomRow["SEPHIRAH"] || "Unknown Sephirah"; // First column as the answer
 
-    clue = randomRow[randomClueField] || "No description available";
-    answer = randomRow["SEPHIRAH"] || "Unknown Sephirah";
+    // Get all columns except the first (SEPHIRAH)
+    const columnKeys = Object.keys(randomRow).slice(1);
+    const randomClueField = columnKeys[Math.floor(Math.random() * columnKeys.length)];
+
+    // Check if the selected column ends with "SET"
+    if (randomClueField.endsWith("SET")) {
+      // Parse JSON and pick a random item from the array
+      try {
+        const options = JSON.parse(randomRow[randomClueField]);
+        clue = options[Math.floor(Math.random() * options.length)] || "No description available";
+      } catch (e) {
+        console.error("Error parsing JSON:", e);
+        clue = "Invalid data format";
+      }
+    } else {
+      // If not a SET field, directly use the value
+      clue = randomRow[randomClueField] || "No description available";
+    }
+
+    // Prepend column name for "COLOUR IN" fields
+    if (randomClueField.startsWith("COLOUR IN")) {
+      clue = `${randomClueField.toUpperCase()} IS: ${clue}`;
+    }
   } else { // thoth dataset
     const randomRow = dataSet[Math.floor(Math.random() * dataSet.length)];
     clue = randomRow["Description"];
     answer = randomRow["Answer"];
   }
 
+  document.getElementById('clue').innerText = clue;
   currentAnswer = answer;
 
-  console.log(`Selected DataSet: ${currentDataSet}`);
+  console.log("Selected DataSet:", currentDataSet);
   console.log("Clue:", clue);
   console.log("Current Answer:", currentAnswer);
-
-  document.getElementById('clue').innerText = clue;
 }
+
 
 function revealAnswer() {
     if (currentAnswer) {
