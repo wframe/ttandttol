@@ -12,6 +12,58 @@
       align-items: center;
       margin-top: 40px;
     }
+/* radiantQuadrants.css */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Full viewport background container */
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1; /* Background */
+    }
+
+    /* Each quadrant styling */
+    .quadrant {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Fleck styling */
+    .fleck {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      opacity: 0;
+      animation: flicker 1.5s infinite ease-in-out;
+    }
+
+    /* Fleck flickering effect */
+    @keyframes flicker {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    /* Flashcard styling */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
 
     #flashcard {
       border: 1px solid #333;
@@ -20,6 +72,9 @@
       text-align: center;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
       border-radius: 8px;
+      background-color: white;
+      position: relative;
+      z-index: 1; /* Foreground */
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -73,6 +128,14 @@
   <div id="buttonContainer">
     <button id="actionButton" onclick="revealAnswer()">Reveal Answer</button>
   </div>
+</div>
+
+<!-- Background Container -->
+<div class="container">
+    <div class="quadrant" id="top"></div>
+    <div class="quadrant" id="mid1"></div>
+    <div class="quadrant" id="mid2"></div>
+    <div class="quadrant" id="bottom"></div>
 </div>
 
 <script>
@@ -166,6 +229,7 @@ loadTSVFromURL(MYSTICALQ_TSV_URL, mysticalqData, "mysticalq");
 loadTSVFromURL(THOTH_TSV_URL, thothData, "thoth");
 
 function loadRandomFlashcard() {
+  clearBackground();
   currentDataSet = Math.random() < 0.5 ? "mysticalq" : "thoth";
   const dataSet = currentDataSet === "mysticalq" ? mysticalqData : thothData;
 
@@ -226,37 +290,209 @@ function loadRandomFlashcard() {
   console.log("Current Answer:", currentAnswer);
 }
 
+// Constants for background mappings
+const TAROT_BACKGROUND_MAP = {
+    "Ace": 1,
+    "Two": 2,
+    "Three": 3,
+    "Four": 4,
+    "Five": 5,
+    "Six": 6,
+    "Seven": 7,
+    "Eight": 8,
+    "Nine": 9,
+    "Ten": 10
+};
 
+const SEPHIRAH_BACKGROUND_MAP = {
+    "Kether": 1,
+    "Chokmah": 2,
+    "Binah": 3,
+    "Chesed": 4,
+    "Geburah": 5,
+    "Tiphareth": 6,
+    "Netzach": 7,
+    "Hod": 8,
+    "Yesod": 9,
+    "Malkuth": 10
+};
+let originalStyles = {};
+// Define the color schemes array
+const colorSchemes = [
+    {
+        name: "Scheme 1",
+        top: { background: "linear-gradient(45deg, #ffffff, #fff8e1, #ffffe0)", animation: "shine 6s infinite linear" },
+        mid1: { background: "linear-gradient(45deg, #ffffff, #fdfdfd, #fffff0)", animation: "shine 8s infinite linear" },
+        mid2: { background: "linear-gradient(45deg, #ffffff, #fdfdfd, #fffff0)", animation: "shine 8s infinite linear" },
+        bottom: { background: "white", flecks: { color: "gold" } }
+    },
+    {
+        name: "Scheme 2",
+        top: { background: "linear-gradient(45deg, #e0f7fa, #b3e5fc)", animation: "shine 6s infinite linear" },
+        mid1: { background: "#bdbdbd" },
+        mid2: { background: "#eceff1" },
+        bottom: { background: "white", flecks: { color: ["red", "blue", "yellow"] } }
+    },
+    {
+        name: "Scheme 3",
+        top: { background: "crimson" },
+        mid1: { background: "black" },
+        mid2: { background: "#4b3621" }, // Dark brown
+        bottom: { background: "grey", flecks: { color: "pink" } }
+    },
+    {
+        name: "Scheme 4",
+        top: { background: "indigo" }, // Deep violet
+        mid1: { background: "blue" },
+        mid2: { background: "#4b0082" }, // Deep purple
+        bottom: { background: "darkblue", flecks: { color: "yellow" } }
+    },
+    {
+        name: "Scheme 5",
+        top: { background: "orange" },
+        mid1: { background: "red" }, // Scarlet red
+        mid2: { background: "#ff2400" }, // Bright scarlet
+        bottom: { background: "darkred", flecks: { color: "black" } }
+    },
+    {
+        name: "Scheme 6",
+        top: { background: "pink" }, // Clear rose-pink
+        mid1: { background: "yellow" },
+        mid2: { background: "salmon" }, // Rich salmon-pink
+        bottom: { background: "#ffbf00" } // Golden amber
+    },
+    {
+        name: "Scheme 7",
+        top: { background: "amber" },
+        mid1: { background: "green" }, // Emerald
+        mid2: { background: "#dfff00" }, // Bright yellowish green
+        bottom: { background: "olive", flecks: { color: "gold" } }
+    },
+    {
+        name: "Scheme 8",
+        top: { background: "#8a2be2" }, // Violet-purple
+        mid1: { background: "orange" },
+        mid2: { background: "#b22222" }, // Russet-red
+        bottom: { background: "#5b3c11", flecks: { color: "white" } } // Yellowish black, flecked with white
+    },
+    {
+        name: "Scheme 9",
+        top: { background: "indigo" },
+        mid1: { background: "violet" },
+        mid2: { background: "#2e0854" }, // Very dark purple
+        bottom: { background: "#e4d00a", flecks: { color: "azure" } } // Citrine, flecked with azure
+    },
+    {
+        name: "Scheme 10",
+        top: { background: "yellow" },
+        mid1: { background: "linear-gradient(45deg, #e4d00a, #3b5323, #80461b, black)" }, // Citrine, olive, russet, black
+        mid2: { background: "linear-gradient(45deg, #e4d00a, #3b5323, #80461b, black)", flecks: { color: "gold" } }, // Same colors, flecked with gold
+        bottom: { background: "black", flecks: { color: "yellow" } } // Black, rayed with yellow
+    }
+];
+
+// Apply a color scheme by index
+function applyColorScheme(schemeIndex) {
+    const scheme = colorSchemes[schemeIndex];
+    document.getElementById("top").style.background = scheme.top.background;
+    document.getElementById("mid1").style.background = scheme.mid1.background;
+    document.getElementById("mid2").style.background = scheme.mid2.background;
+    document.getElementById("bottom").style.background = scheme.bottom.background;
+
+    // Optional flecks
+    if (scheme.bottom.flecks) createFlecks(scheme.bottom.flecks.color);
+}
+let fleckIntervalID;  // Global variable to store the fleck interval ID
+
+// Function to create and animate flecks
+function createFlecks(colors) {
+    const bottomQuadrant = document.getElementById("bottom");
+    const numFlecks = 30;
+
+    function createFleck() {
+        const fleck = document.createElement("div");
+        fleck.classList.add("fleck");
+        fleck.style.backgroundColor = Array.isArray(colors)
+            ? colors[Math.floor(Math.random() * colors.length)]
+            : colors;
+        
+        fleck.style.left = `${Math.random() * 100}%`;
+        fleck.style.top = `${Math.random() * 100}%`;
+        bottomQuadrant.appendChild(fleck);
+        
+        // Remove fleck after animation
+        setTimeout(() => fleck.remove(), 1500);
+    }
+
+    // Clear any existing interval before starting a new one
+    clearInterval(fleckIntervalID);
+
+    // Add multiple flecks at intervals and store the interval ID
+    fleckIntervalID = setInterval(() => {
+        for (let i = 0; i < numFlecks; i++) {
+            createFleck();
+        }
+    }, 500);
+}
+
+// Function to clear background and stop flecks
+function clearBackground() {
+    // Reset each quadrant's background style to an initial blank state
+    document.getElementById("top").style.background = "none";
+    document.getElementById("mid1").style.background = "none";
+    document.getElementById("mid2").style.background = "none";
+    document.getElementById("bottom").style.background = "none";
+
+    // Clear the fleck interval to stop creating new flecks
+    clearInterval(fleckIntervalID);
+
+    // Remove any existing flecks
+    const flecks = document.querySelectorAll(".fleck");
+    flecks.forEach(fleck => fleck.remove());
+}
 function revealAnswer() {
     if (currentAnswer) {
+        // Reveal the answer and reset button for a new flashcard
         document.getElementById('answer').classList.remove('hidden');
         document.getElementById('answer').innerText = `Answer: ${currentAnswer}`;
+        document.getElementById('cardImage').style.display = 'block';
 
+        // Check if we are in the Thoth dataset or Mystical Qabalah (mysticalq)
         if (currentDataSet === "thoth") {
             // Check if currentAnswer corresponds to a Sephirah
             if (mysticalqData.some(row => row["SEPHIRAH"] === currentAnswer)) {
-                // This is a Sephirah in the Thoth dataset, use the sephiroth image path
+                // This is a Sephirah in the Thoth dataset; use the sephiroth image path
+                const backgroundIndex = SEPHIRAH_BACKGROUND_MAP[currentAnswer];
+                if (backgroundIndex) {
+                    applyColorScheme(backgroundIndex - 1); // Adjust for 0-based index
+                }
                 const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/sephiroth/${mysticalqData.findIndex(row => row["SEPHIRAH"] === currentAnswer) + 1}_${currentAnswer.toLowerCase()}.jpg`;
                 document.getElementById('cardImage').src = imagePath;
-                document.getElementById('cardImage').style.display = 'block';
             } else if (tarotCardMappings[currentAnswer]) {
                 // This is a regular Tarot card in the Thoth dataset
+                const [rank] = currentAnswer.split(" of ");
+                const backgroundIndex = TAROT_BACKGROUND_MAP[rank];
+                if (backgroundIndex) {
+                    applyColorScheme(backgroundIndex - 1); // Adjust for 0-based index
+                }
                 const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/thoth_tarot/${tarotCardMappings[currentAnswer]}.jpg`;
                 document.getElementById('cardImage').src = imagePath;
-                document.getElementById('cardImage').style.display = 'block';
             }
         } else if (currentDataSet === "mysticalq") {
-            // Handle the Sephiroth path for mysticalq as before
+            // Handle the Sephiroth path for mysticalq dataset
+            const backgroundIndex = SEPHIRAH_BACKGROUND_MAP[currentAnswer];
+            if (backgroundIndex) {
+                applyColorScheme(backgroundIndex - 1); // Adjust for 0-based index
+            }
             const imagePath = `https://cdn.jsdelivr.net/gh/wframe/ttandttol@main/sephiroth/${mysticalqData.findIndex(row => row["SEPHIRAH"] === currentAnswer) + 1}_${currentAnswer.toLowerCase()}.jpg`;
             document.getElementById('cardImage').src = imagePath;
-            document.getElementById('cardImage').style.display = 'block';
         }
 
+        // Set button text for new flashcard and reset button action
         document.getElementById('actionButton').innerText = 'New Flashcard';
         document.getElementById('actionButton').onclick = loadRandomFlashcard;
     }
 }
-
 
 
 document.addEventListener('DOMContentLoaded', () => {
